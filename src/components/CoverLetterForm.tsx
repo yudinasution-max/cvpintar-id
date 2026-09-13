@@ -100,14 +100,7 @@ export const CoverLetterForm: React.FC<CoverLetterFormProps> = ({
 
   // --- SUBMISSION KE SUPABASE ---
   const handleSubmit = async () => {
-    // 1. Log dan alert tepat saat tombol submit diklik
-    console.log('[DEBUG] Tombol submit diklik (Cover Letter)');
-    alert('[DEBUG 1] Tombol submit diklik! Memulai validasi form...');
-
-    if (!validateCurrentStep()) {
-      alert(`[DEBUG 1 - GAGAL] Validasi form gagal: ${errorMessage || 'Periksa field yang belum diisi'}`);
-      return;
-    }
+    if (!validateCurrentStep()) return;
 
     setIsSubmitting(true);
     setErrorMessage(null);
@@ -124,65 +117,39 @@ export const CoverLetterForm: React.FC<CoverLetterFormProps> = ({
       midtrans_order_id: midtransOrderId,
     };
 
-    // 2. Log sebelum memanggil supabase insert
-    console.log('[DEBUG] Memulai insert ke Supabase (Cover Letter):', submissionPayload);
-    alert(`[DEBUG 2] Memulai insert ke Supabase!\nOrder ID: ${midtransOrderId}\nNama: ${formData.namaLengkap}\nPosisi: ${formData.posisiDilamar}`);
-
     try {
       let savedId = `local-${Date.now()}`;
 
       if (isSupabaseConfigured) {
-        console.log('[DEBUG] Supabase client terkonfigurasi. Mengirim query insert...');
         const { data, error } = await supabase
           .from('submissions')
           .insert([submissionPayload])
           .select()
           .maybeSingle();
 
-        console.log('[DEBUG] Response lengkap dari Supabase insert:', { data, error });
-
         if (error) {
           console.error('[Supabase Insert Error]', error);
-          const fullErrorDetail = `[GAGAL INSERT SUPABASE]\n\nKode: ${error.code || '-'}\nPesan: ${error.message || '-'}\nDetail: ${error.details || '-'}\nHint: ${error.hint || '-'}`;
-          alert(fullErrorDetail);
-          setErrorMessage(
-            `Error Supabase: ${error.message} (${error.code ? `Kode: ${error.code}. ` : ''}${error.hint || error.details || 'Jalankan SQL GRANT di Supabase SQL Editor.'})`
-          );
+          setErrorMessage('Terjadi kesalahan saat menyimpan data. Silakan coba lagi.');
           setIsSubmitting(false);
           return;
         } else if (data) {
           savedId = data.id;
           submissionPayload.id = data.id;
           submissionPayload.created_at = data.created_at;
-          console.log('[DEBUG 3 - BERHASIL] Data sukses tersimpan di Supabase:', data);
-          alert(`[BERHASIL!] Data berhasil disimpan ke Supabase!\n\nID: ${data.id}\nOrder ID: ${midtransOrderId}`);
         } else {
           submissionPayload.id = savedId;
-          alert(`[BERHASIL!] Data berhasil di-insert ke Supabase!\nOrder ID: ${midtransOrderId}`);
         }
       } else {
-        const warningText = '[DEBUG 3 - GAGAL] isSupabaseConfigured bernilai false! Periksa URL & key di supabaseClient.ts.';
-        console.warn(warningText);
-        alert(warningText);
-        setErrorMessage('Koneksi Supabase belum terkonfigurasi dengan benar.');
+        console.warn('Koneksi Supabase belum terkonfigurasi.');
+        setErrorMessage('Terjadi kesalahan koneksi penyimpanan. Silakan coba beberapa saat lagi.');
         setIsSubmitting(false);
         return;
       }
 
-      console.log('Submission tersimpan ke Supabase:', {
-        id: submissionPayload.id || savedId,
-        midtrans_order_id: midtransOrderId,
-        paket: 'surat_lamaran',
-        data_form: formData,
-        status_pembayaran: 'pending',
-      });
-
       onSubmitSuccess(submissionPayload);
     } catch (err: any) {
       console.error('[Submission Exception]', err);
-      const errMsg = err?.message || JSON.stringify(err);
-      alert(`[DEBUG 3 - EXCEPTION] Terjadi exception saat menghubungi Supabase:\n\n${errMsg}`);
-      setErrorMessage(`Gagal menghubungi Supabase: ${errMsg}`);
+      setErrorMessage('Terjadi kesalahan saat menyimpan data. Silakan periksa koneksi Anda dan coba lagi.');
     } finally {
       setIsSubmitting(false);
     }
