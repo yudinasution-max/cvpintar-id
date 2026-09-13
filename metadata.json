@@ -1,0 +1,6 @@
+{
+  "name": "CVPintar ID",
+  "description": "Platform pembuatan CV, Surat Lamaran Kerja profesional, dan Portofolio online.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
